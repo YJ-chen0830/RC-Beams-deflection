@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RC梁/版撓度估算 | Deflection Check</title>
+<title>RC梁/版撓度估算</title>
 <style>
   :root{--navy:#0b1f3a;--navy2:#13284a;--gold:#c9a14a;--gold2:#e0bf6e;--bg:#f5f3ee;--ink:#1c2530;--line:#d8d2c2;}
   *{box-sizing:border-box;}
@@ -25,9 +25,11 @@
   td,th{padding:6px 4px;border-bottom:1px solid #eee;font-size:13.5px;}
   th{background:#f5f3ee;font-weight:600;color:var(--navy);font-size:12px;text-align:left;}
   td:last-child{text-align:right;font-weight:600;}
-  .ok{color:#1a7d3a;font-weight:700;}
-  .ng{color:#c0392b;font-weight:700;}
+  .ok{color:#1a7d3a;font-weight:700;}.ng{color:#c0392b;font-weight:700;}
   .note{font-size:12px;color:#888;margin-top:12px;line-height:1.7;}
+  details.proc{margin-top:14px;border:1px solid var(--line);border-radius:8px;background:#fafaf8;}
+  details.proc summary{cursor:pointer;padding:10px 14px;font-weight:700;font-size:13px;color:var(--navy);user-select:none;}
+  details.proc pre{margin:0;padding:10px 16px 14px;font-family:"Courier New",monospace;font-size:11.5px;line-height:1.85;white-space:pre-wrap;color:#2c3e50;border-top:1px solid var(--line);}
 </style>
 </head>
 <body>
@@ -40,25 +42,19 @@
   <div class="card">
     <h2>構件設定</h2>
     <div class="row2">
-      <div>
-        <label>構件類型</label>
-        <select id="memberType">
-          <option value="beam">梁</option>
-          <option value="slab">版（單向版）</option>
-        </select>
+      <div><label>構件類型</label>
+        <select id="memberType"><option value="beam">梁</option><option value="slab">版</option></select>
       </div>
-      <div>
-        <label>支承條件</label>
+      <div><label>支承條件</label>
         <select id="support">
-          <option value="simple">簡支 (Simple)</option>
-          <option value="cantilever">懸臂 (Cantilever)</option>
-          <option value="fixedboth">兩端固接 (Fixed-Fixed)</option>
+          <option value="simple">簡支</option>
+          <option value="cantilever">懸臂</option>
+          <option value="fixedboth">兩端固接</option>
           <option value="fixedone">一端固一端簡支</option>
         </select>
       </div>
     </div>
-    <label>跨度 L (m)</label>
-    <input id="L" type="number" value="6" step="0.1">
+    <label>跨度 L (m)</label><input id="L" type="number" value="6" step="0.1">
     <div class="row2">
       <div><label>斷面寬 b (mm)</label><input id="b" type="number" value="300"></div>
       <div><label>梁總深 h (mm)</label><input id="h" type="number" value="600"></div>
@@ -67,35 +63,30 @@
       <div><label>有效深度 d (mm)</label><input id="d" type="number" value="540"></div>
       <div><label>f'c (MPa)</label><input id="fc" type="number" value="28"></div>
     </div>
-
-    <h2 style="margin-top:16px;">鋼筋（Branson 公式用）</h2>
+    <h2 style="margin-top:16px;">鋼筋</h2>
     <div class="row2">
-      <div><label>拉力筋面積 As (mm²)</label><input id="As" type="number" value="1964"></div>
-      <div><label>壓力筋面積 As' (mm²)</label><input id="Asp" type="number" value="0"></div>
+      <div><label>拉力筋 As (mm²)</label><input id="As" type="number" value="1964"></div>
+      <div><label>壓力筋 As' (mm²)</label><input id="Asp" type="number" value="0"></div>
     </div>
-
     <h2 style="margin-top:16px;">載重</h2>
     <div class="row2">
       <div><label>恆載 wD (kN/m)</label><input id="wD" type="number" value="20"></div>
       <div><label>活載 wL (kN/m)</label><input id="wL" type="number" value="15"></div>
     </div>
-    <label>長期持續載重比 ξ（通常取恆載佔比，0~1）</label>
+    <label>長期持續載重比 ξ（0~1）</label>
     <input id="xi" type="number" value="0.7" step="0.05">
-    <label>長期係數 λΔ（5年=1.4, 12年=1.7, 60月=2.0，一般用2.0）</label>
+    <label>長期係數 λΔ（一般用2.0）</label>
     <input id="lambdaD" type="number" value="2.0" step="0.1">
-
     <h2 style="margin-top:16px;">撓度限制</h2>
     <div class="row2">
-      <div>
-        <label>總撓度限制</label>
+      <div><label>總撓度限制</label>
         <select id="limitTotal">
-          <option value="240">L/240（一般構件）</option>
-          <option value="360" selected>L/360（有脆性隔間牆）</option>
+          <option value="240">L/240</option>
+          <option value="360" selected>L/360</option>
           <option value="480">L/480</option>
         </select>
       </div>
-      <div>
-        <label>活載撓度限制</label>
+      <div><label>活載撓度限制</label>
         <select id="limitLL">
           <option value="180">L/180</option>
           <option value="240">L/240</option>
@@ -104,119 +95,204 @@
       </div>
     </div>
     <button onclick="calc()">計算</button>
-    <div class="note">
-      Branson 有效慣性矩：Ie = (Mcr/Ma)³·Ig + [1-(Mcr/Ma)³]·Icr，取 Ie ≤ Ig。
-      即時撓度依支承條件套用均布載重撓度公式；長期撓度 = λΔ·ξ·δ_imm（恆載部份）加上活載即時撓度。
-      正式設計需依 ACI 318-19 §24 完整流程並由工程師複核。
-    </div>
+    <div class="note">Branson Ie · ACI 318-19 §24.2</div>
   </div>
-
   <div class="card">
     <h2>計算結果</h2>
     <div id="result"><p style="color:#888">尚未計算</p></div>
+    <details class="proc" id="proc-box" style="display:none">
+      <summary>📋 計算過程（供第三方檢核）</summary>
+      <pre id="proc-text"></pre>
+    </details>
   </div>
 </div>
 </main>
-
 <script>
-function deflCoeff(support){
-  switch(support){
-    case 'simple':    return 5/384;
-    case 'cantilever': return 1/8;
-    case 'fixedboth': return 1/384;
-    case 'fixedone':  return 1/185;
-    default: return 5/384;
-  }
+function deflCoeff(s){
+  return s==='simple'?5/384:s==='cantilever'?1/8:s==='fixedboth'?1/384:1/185;
 }
-
+function supportName(s){
+  return{simple:'簡支（δ=5wL⁴/384EI）',cantilever:'懸臂（δ=wL⁴/8EI）',fixedboth:'兩端固接（δ=wL⁴/384EI）',fixedone:'一端固一端簡支（δ=wL⁴/185EI）'}[s];
+}
 function calc(){
-  const L  = +document.getElementById('L').value * 1000;
-  const b  = +document.getElementById('b').value;
-  const h  = +document.getElementById('h').value;
-  const d  = +document.getElementById('d').value;
-  const fc = +document.getElementById('fc').value;
-  const As = +document.getElementById('As').value;
-  const wD = +document.getElementById('wD').value;
-  const wL = +document.getElementById('wL').value;
-  const xi = +document.getElementById('xi').value;
-  const lambdaD = +document.getElementById('lambdaD').value;
-  const support = document.getElementById('support').value;
-  const limitTotal = +document.getElementById('limitTotal').value;
-  const limitLL = +document.getElementById('limitLL').value;
+  const L=+document.getElementById('L').value*1000;
+  const b=+document.getElementById('b').value;
+  const h=+document.getElementById('h').value;
+  const d=+document.getElementById('d').value;
+  const fc=+document.getElementById('fc').value;
+  const As=+document.getElementById('As').value;
+  const wD=+document.getElementById('wD').value;
+  const wL=+document.getElementById('wL').value;
+  const xi=+document.getElementById('xi').value;
+  const lambdaD=+document.getElementById('lambdaD').value;
+  const support=document.getElementById('support').value;
+  const limitTotal=+document.getElementById('limitTotal').value;
+  const limitLL=+document.getElementById('limitLL').value;
 
-  const Ec = 4700*Math.sqrt(fc);
-  const Es = 200000;
-  const n  = Math.round(Es/Ec);
-  const fr = 0.62*Math.sqrt(fc);
-  const Ig = b*h*h*h/12;
-  const yt = h/2;
-  const Mcr = fr*Ig/yt / 1e6;
+  const Ec=4700*Math.sqrt(fc);
+  const Es=200000;
+  const n=Math.round(Es/Ec);
+  const fr=0.62*Math.sqrt(fc);
+  const Ig=b*h*h*h/12;
+  const yt=h/2;
+  const Mcr=fr*Ig/yt/1e6;
 
-  const rho = As/(b*d);
-  const k2 = Math.sqrt(2*rho*n + (rho*n)*(rho*n)) - rho*n;
-  const kd = k2*d;
-  const Icr = b*kd*kd*kd/3 + n*As*(d-kd)*(d-kd);
+  const rho=As/(b*d);
+  const k2=Math.sqrt(2*rho*n+(rho*n)*(rho*n))-rho*n;
+  const kd=k2*d;
+  const Icr=b*kd*kd*kd/3+n*As*(d-kd)*(d-kd);
 
   function midMoment(w){
-    switch(support){
-      case 'simple':    return w*L*L/8e6;
-      case 'cantilever': return w*L*L/2e6;
-      case 'fixedboth': return w*L*L/24e6;
-      case 'fixedone':  return w*L*L/14.2e6;
-      default: return w*L*L/8e6;
-    }
+    const c={simple:8,cantilever:2,fixedboth:24,fixedone:14.2}[support]||8;
+    return w*L*L/(c*1e6);
   }
-
-  const Ma_D  = midMoment(wD);
-  const Ma_DL = midMoment(wD+wL);
+  const Ma_D=midMoment(wD);
+  const Ma_DL=midMoment(wD+wL);
 
   function Ie(Ma){
-    if(Ma <= 0) return Ig;
-    const ratio = Mcr/Ma;
-    const r3 = Math.pow(Math.min(ratio,1),3);
-    return Math.min(r3*Ig + (1-r3)*Icr, Ig);
+    if(Ma<=0)return Ig;
+    const r=Math.pow(Math.min(Mcr/Ma,1),3);
+    return Math.min(r*Ig+(1-r)*Icr,Ig);
   }
+  const Ie_D=Ie(Ma_D);
+  const Ie_DL=Ie(Ma_DL);
+  const k=deflCoeff(support);
 
-  const Ie_D  = Ie(Ma_D);
-  const Ie_DL = Ie(Ma_DL);
-  const k = deflCoeff(support);
-  function delta(w, Ieff){ return k*(w/1000)*(L*L*L*L)/(Ec*Ieff); }
+  function delta(w,Ieff){return k*(w/1000)*Math.pow(L,4)/(Ec*Ieff);}
+  const delta_D=delta(wD,Ie_D);
+  const delta_DL=delta(wD+wL,Ie_DL);
+  const delta_L=delta_DL-delta_D;
+  const delta_LT=lambdaD*xi*delta_D+delta_L;
 
-  const delta_D  = delta(wD, Ie_D);
-  const delta_DL = delta(wD+wL, Ie_DL);
-  const delta_L  = delta_DL - delta_D;
-  const delta_LT = lambdaD*xi*delta_D + delta_L;
+  const limTot=L/limitTotal;
+  const limLL=L/limitLL;
+  const okTotal=delta_LT<=limTot;
+  const okLL=delta_L<=limLL;
 
-  const limitTotalMm = L/limitTotal;
-  const limitLLMm    = L/limitLL;
-  const okTotal = delta_LT <= limitTotalMm;
-  const okLL    = delta_L  <= limitLLMm;
-
-  document.getElementById('result').innerHTML = `
+  document.getElementById('result').innerHTML=`
     <table>
       <tr><th>斷面參數</th><th></th><th></th></tr>
       <tr><td>Ec (MPa)</td><td></td><td>${Ec.toFixed(0)}</td></tr>
-      <tr><td>模數比 n = Es/Ec</td><td></td><td>${n}</td></tr>
-      <tr><td>fr 破裂模數 (MPa)</td><td></td><td>${fr.toFixed(2)}</td></tr>
-      <tr><td>Ig (mm⁴)</td><td></td><td>${(Ig/1e6).toFixed(1)}×10⁶</td></tr>
-      <tr><td>Icr (mm⁴)</td><td></td><td>${(Icr/1e6).toFixed(1)}×10⁶</td></tr>
-      <tr><td>Mcr 開裂彎矩 (kN·m)</td><td></td><td>${Mcr.toFixed(1)}</td></tr>
+      <tr><td>模數比 n</td><td></td><td>${n}</td></tr>
+      <tr><td>fr (MPa)</td><td></td><td>${fr.toFixed(2)}</td></tr>
+      <tr><td>Ig (mm⁴)</td><td></td><td>${(Ig/1e6).toFixed(2)}×10⁶</td></tr>
+      <tr><td>Icr (mm⁴)</td><td></td><td>${(Icr/1e6).toFixed(2)}×10⁶</td></tr>
+      <tr><td>Mcr (kN·m)</td><td></td><td>${Mcr.toFixed(2)}</td></tr>
       <tr><th>有效慣性矩</th><th></th><th></th></tr>
-      <tr><td>Ma (恆載) (kN·m)</td><td></td><td>${Ma_D.toFixed(1)}</td></tr>
-      <tr><td>Ma (恆+活載) (kN·m)</td><td></td><td>${Ma_DL.toFixed(1)}</td></tr>
-      <tr><td>Ie (恆載) (mm⁴)</td><td></td><td>${(Ie_D/1e6).toFixed(1)}×10⁶</td></tr>
-      <tr><td>Ie (恆+活載) (mm⁴)</td><td></td><td>${(Ie_DL/1e6).toFixed(1)}×10⁶</td></tr>
-      <tr><th>撓度</th><th>限制</th><th>計算值 (mm)</th></tr>
-      <tr><td>即時撓度 δD（恆載）</td><td>—</td><td>${delta_D.toFixed(2)}</td></tr>
-      <tr><td>即時撓度 δL（活載）</td><td>L/${limitLL} = ${limitLLMm.toFixed(1)} mm</td>
-          <td>${delta_L.toFixed(2)} ${okLL?'<span class="ok">OK</span>':'<span class="ng">NG</span>'}</td></tr>
-      <tr><td>長期增量撓度 δLT<br><small>= λΔ·ξ·δD + δL</small></td>
-          <td>L/${limitTotal} = ${limitTotalMm.toFixed(1)} mm</td>
-          <td>${delta_LT.toFixed(2)} ${okTotal?'<span class="ok">OK</span>':'<span class="ng">NG</span>'}</td></tr>
-    </table>
-  `;
+      <tr><td>Ma恆載 (kN·m)</td><td></td><td>${Ma_D.toFixed(2)}</td></tr>
+      <tr><td>Ma恆+活 (kN·m)</td><td></td><td>${Ma_DL.toFixed(2)}</td></tr>
+      <tr><td>Ie恆載 (mm⁴)</td><td></td><td>${(Ie_D/1e6).toFixed(2)}×10⁶</td></tr>
+      <tr><td>Ie恆+活 (mm⁴)</td><td></td><td>${(Ie_DL/1e6).toFixed(2)}×10⁶</td></tr>
+      <tr><th>撓度</th><th>限制</th><th>計算值(mm)</th></tr>
+      <tr><td>δD即時（恆載）</td><td>—</td><td>${delta_D.toFixed(3)}</td></tr>
+      <tr><td>δL即時（活載）</td><td>L/${limitLL}=${limLL.toFixed(1)}mm</td>
+          <td>${delta_L.toFixed(3)} ${okLL?'<span class="ok">OK</span>':'<span class="ng">NG</span>'}</td></tr>
+      <tr><td>δLT長期增量</td><td>L/${limitTotal}=${limTot.toFixed(1)}mm</td>
+          <td>${delta_LT.toFixed(3)} ${okTotal?'<span class="ok">OK</span>':'<span class="ng">NG</span>'}</td></tr>
+    </table>`;
+
+  const denomMap={simple:'8',cantilever:'2',fixedboth:'24',fixedone:'14.2'};
+  const denom=denomMap[support]||'8';
+  const kFrac={simple:'5/384',cantilever:'1/8',fixedboth:'1/384',fixedone:'1/185'}[support];
+
+  const proc=`════════════════════════════════════════
+RC梁/版撓度估算 計算過程
+規範依據：ACI 318-19 §24.2
+════════════════════════════════════════
+
+【一、輸入參數】
+  跨度 L    = ${L/1000} m = ${L} mm
+  斷面 b×h  = ${b}×${h} mm
+  有效深 d  = ${d} mm
+  f'c       = ${fc} MPa
+  As（拉力）= ${As} mm²
+  恆載 wD   = ${wD} kN/m
+  活載 wL   = ${wL} kN/m
+  長期比 ξ  = ${xi}
+  長期係數 λΔ= ${lambdaD}
+  支承條件  = ${supportName(support)}
+
+【二、材料特性】（ACI 318-19 §19.2.2 / §24.2.3）
+  Ec = 4700×√f'c = 4700×√${fc} = ${Ec.toFixed(1)} MPa
+  Es = 200,000 MPa
+  n  = Es/Ec = 200,000/${Ec.toFixed(1)} = ${(200000/Ec).toFixed(2)} → 取整數 n = ${n}
+  fr = 0.62×√f'c = 0.62×√${fc} = ${fr.toFixed(3)} MPa（破裂模數）
+
+【三、毛斷面慣性矩 Ig 及開裂彎矩 Mcr】
+  Ig = b×h³/12 = ${b}×${h}³/12 = ${Ig.toFixed(0)} mm⁴ = ${(Ig/1e6).toFixed(3)}×10⁶ mm⁴
+  yt = h/2 = ${h}/2 = ${yt} mm
+  Mcr = fr×Ig/yt = ${fr.toFixed(3)}×${Ig.toFixed(0)}/${yt} = ${(fr*Ig/yt).toFixed(0)} N·mm
+      = ${Mcr.toFixed(3)} kN·m
+
+【四、開裂斷面慣性矩 Icr】（中性軸位於受壓區深 kd）
+  ρ = As/(b×d) = ${As}/(${b}×${d}) = ${rho.toFixed(5)}
+  n×ρ = ${n}×${rho.toFixed(5)} = ${(n*rho).toFixed(4)}
+
+  由平衡：b×kd²/2 = n×As×(d-kd)
+  求解二次方程（令 k = kd/d）：
+    k = √(2ρn+(ρn)²) - ρn
+      = √(2×${(rho*n).toFixed(4)}+(${(rho*n).toFixed(4)})²) - ${(rho*n).toFixed(4)}
+      = ${k2.toFixed(5)}
+  kd = k×d = ${k2.toFixed(5)}×${d} = ${kd.toFixed(2)} mm
+
+  Icr = b×kd³/3 + n×As×(d-kd)²
+      = ${b}×${kd.toFixed(2)}³/3 + ${n}×${As}×(${d}-${kd.toFixed(2)})²
+      = ${(b*kd*kd*kd/3).toFixed(0)} + ${(n*As*(d-kd)*(d-kd)).toFixed(0)}
+      = ${Icr.toFixed(0)} mm⁴ = ${(Icr/1e6).toFixed(3)}×10⁶ mm⁴
+
+【五、作用彎矩 Ma（均布載重中點/固端）】
+  恆載彎矩 Ma_D  = wD×L²/${denom}×10⁻⁶
+                 = ${wD}×${L}²/${denom}×10⁻⁶
+                 = ${Ma_D.toFixed(3)} kN·m
+
+  恆+活彎矩 Ma_DL = (wD+wL)×L²/${denom}×10⁻⁶
+                  = ${wD+wL}×${L}²/${denom}×10⁻⁶
+                  = ${Ma_DL.toFixed(3)} kN·m
+
+【六、Branson 有效慣性矩 Ie】（ACI 318-19 §24.2.3.5）
+  公式：Ie = (Mcr/Ma)³×Ig + [1-(Mcr/Ma)³]×Icr  ≤ Ig
+
+  恆載（Ma = ${Ma_D.toFixed(3)} kN·m）：
+    Mcr/Ma = ${Mcr.toFixed(3)}/${Ma_D.toFixed(3)} = ${(Mcr/Ma_D).toFixed(4)}
+    (Mcr/Ma)³ = ${Math.pow(Math.min(Mcr/Ma_D,1),3).toFixed(5)}
+    Ie_D = ${Math.pow(Math.min(Mcr/Ma_D,1),3).toFixed(5)}×${(Ig/1e6).toFixed(3)}×10⁶
+         + (1-${Math.pow(Math.min(Mcr/Ma_D,1),3).toFixed(5)})×${(Icr/1e6).toFixed(3)}×10⁶
+         = ${(Ie_D/1e6).toFixed(3)}×10⁶ mm⁴ ${Ie_D>=Ig?'（取上限=Ig）':''}
+
+  恆+活（Ma = ${Ma_DL.toFixed(3)} kN·m）：
+    Mcr/Ma = ${Mcr.toFixed(3)}/${Ma_DL.toFixed(3)} = ${(Mcr/Ma_DL).toFixed(4)}
+    (Mcr/Ma)³ = ${Math.pow(Math.min(Mcr/Ma_DL,1),3).toFixed(5)}
+    Ie_DL = ${(Ie_DL/1e6).toFixed(3)}×10⁶ mm⁴ ${Ie_DL>=Ig?'（取上限=Ig）':''}
+
+【七、即時撓度】（公式係數 k = ${kFrac}）
+  δD  = ${kFrac}×(wD/1000)×L⁴/(Ec×Ie_D)
+      = ${kFrac}×(${wD}/1000)×${L}⁴/(${Ec.toFixed(1)}×${Ie_D.toFixed(0)})
+      = ${delta_D.toFixed(4)} mm
+
+  δDL = ${kFrac}×(${wD+wL}/1000)×${L}⁴/(${Ec.toFixed(1)}×${Ie_DL.toFixed(0)})
+      = ${delta_DL.toFixed(4)} mm
+
+  δL（活載即時）= δDL - δD = ${delta_DL.toFixed(4)} - ${delta_D.toFixed(4)} = ${delta_L.toFixed(4)} mm
+
+【八、長期增量撓度 δLT】（ACI 318-19 §24.2.4）
+  δLT = λΔ × ξ × δD + δL
+      = ${lambdaD} × ${xi} × ${delta_D.toFixed(4)} + ${delta_L.toFixed(4)}
+      = ${(lambdaD*xi*delta_D).toFixed(4)} + ${delta_L.toFixed(4)}
+      = ${delta_LT.toFixed(4)} mm
+
+【九、限制值比較】
+  活載撓度：δL = ${delta_L.toFixed(3)} mm
+    限制 L/${limitLL} = ${L}/${limitLL} = ${limLL.toFixed(1)} mm
+    判定：${delta_L.toFixed(3)} ${okLL?'≤':'>'} ${limLL.toFixed(1)} → ${okLL?'OK ✓':'NG ✗'}
+
+  長期增量撓度：δLT = ${delta_LT.toFixed(3)} mm
+    限制 L/${limitTotal} = ${L}/${limitTotal} = ${limTot.toFixed(1)} mm
+    判定：${delta_LT.toFixed(3)} ${okTotal?'≤':'>'} ${limTot.toFixed(1)} → ${okTotal?'OK ✓':'NG ✗'}`;
+
+  document.getElementById('proc-text').textContent=proc;
+  document.getElementById('proc-box').style.display='';
 }
-window.onload = calc;
+window.onload=calc;
 </script>
 </body>
 </html>
